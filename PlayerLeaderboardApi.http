@@ -1,0 +1,6 @@
+@PlayerLeaderboardApi_HostAddress = http://localhost:5217
+
+GET {{PlayerLeaderboardApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
