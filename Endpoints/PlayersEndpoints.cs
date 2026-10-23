@@ -6,6 +6,7 @@ namespace PlayerLeaderboardApi.Endpoints;
 
 public record PlayerDto(string Name);
 public record PlayersTopDto(string DisplayName, int Score);
+public record GetPlayerDto(int Id, string Name, string DisplayName, List<int> AchievementIds);
 
 public static class PlayersEndpoints
 {
@@ -34,16 +35,26 @@ public static class PlayersEndpoints
         {
             var player = await db.Players
                 .Where(p => p.Id == id)
+                .Include(p => p.Achievements)
                 .FirstOrDefaultAsync();
+            
+            if (player == null) return Results.NotFound("A player with this id does not exist");
+
+            var playerResult = new GetPlayerDto(player.Id, player.Name, player.DisplayName, player.GetAchievementIds());
+            return Results.Ok(playerResult);
         });
 
         group.MapGet("/{name}", async (string name, AppDbContext db) =>
         {
             var player = await db.Players
                 .Where(p => p.Name == name)
+                .Include(p => p.Achievements)
                 .FirstOrDefaultAsync();
 
-            return Results.Ok(player);
+            if (player == null) return Results.NotFound("A player with this name does not exist");
+
+            var playerResult = new GetPlayerDto(player.Id, player.Name, player.DisplayName, player.GetAchievementIds());
+            return Results.Ok(playerResult);
         });
 
         app.MapPost("/api/players", async (AppDbContext db, PlayerDto dto) =>

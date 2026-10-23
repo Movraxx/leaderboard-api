@@ -5,6 +5,7 @@ using PlayerLeaderboardApi.Context.Entities;
 namespace PlayerLeaderboardApi.Endpoints;
 
 public record AchievementDto(string Name, int Points);
+public record GetAchievementDto(int Id, string Name, string DisplayName, int Points);
 
 public static class AchievementsEndpoints
 {
@@ -29,6 +30,9 @@ public static class AchievementsEndpoints
                 .Where(a => a.Id == id)
                 .FirstOrDefaultAsync();
 
+            if (achievement == null) return Results.NotFound("An achievement with this id does not exist");
+
+            var achievementResult = new GetAchievementDto(achievement.Id, achievement.Name, achievement.DisplayName, achievement.Points);
             return Results.Ok(achievement);
         });
 
@@ -38,6 +42,9 @@ public static class AchievementsEndpoints
                 .Where(a => a.Name == name)
                 .FirstOrDefaultAsync();
 
+            if (achievement == null) return Results.NotFound("An achievement with this name does not exist");
+
+            var achievementResult = new GetAchievementDto(achievement.Id, achievement.Name, achievement.DisplayName, achievement.Points);
             return Results.Ok(achievement);
         });
 
