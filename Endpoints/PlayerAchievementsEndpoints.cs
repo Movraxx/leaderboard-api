@@ -11,10 +11,15 @@ public static class PlayerAchievementsEndpoints
     {
         app.MapPost("/api/player_achievements/", async (AppDbContext db, PlayerAchievementDto dto) =>
         {
-            var player = await db.Players.FirstOrDefaultAsync(p => p.Id == dto.PlayerId);
-            var achievement = await db.Achievements.FirstOrDefaultAsync(a => a.Id == dto.AchievementId);
+            var playerId = await db.Players
+                .Select(p => p.Id)
+                .FirstOrDefaultAsync(id => id == dto.PlayerId);
 
-            if (player == null || achievement == null) return Results.BadRequest("A player or an achievement with this id does not exist");
+            var achievementId = await db.Achievements
+                .Select(a => a.Id)
+                .FirstOrDefaultAsync(id => id == dto.AchievementId);
+
+            if (playerId == default  || achievementId == default) return Results.BadRequest("A player or an achievement with this id does not exist");
 
             bool playerAchievementExists = await db.PlayerAchievements.AnyAsync(pa => pa.PlayerId == dto.PlayerId && pa.AchievementId == dto.AchievementId);
             if (playerAchievementExists) return Results.Conflict("This entry already exists");
@@ -28,7 +33,20 @@ public static class PlayerAchievementsEndpoints
             db.PlayerAchievements.Add(playerAchievement);
             await db.SaveChangesAsync();
             
-            return Results.Ok("Success");
+            return Results.Ok(playerAchievement);
+        });
+
+        app.MapDelete("/api/player_achievements/{playerId:int}_{achievementId:int}", async (int playerId, int achievementId, AppDbContext db) =>
+        {
+            var playerAchievement = await db.PlayerAchievements
+                .FirstOrDefaultAsync(pa => pa.PlayerId == playerId && pa.AchievementId == achievementId);
+
+            if (playerAchievement == null) return Results.NotFound();
+
+            db.PlayerAchievements.Remove(playerAchievement);
+            await db.SaveChangesAsync();
+
+            return Results.NoContent();
         });
     }
 }

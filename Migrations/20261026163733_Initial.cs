@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -48,8 +47,7 @@ namespace PlayerLeaderboardApi.Migrations
                 columns: table => new
                 {
                     player_id = table.Column<int>(type: "integer", nullable: false),
-                    achievement_id = table.Column<int>(type: "integer", nullable: false),
-                    created_on = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    achievement_id = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {

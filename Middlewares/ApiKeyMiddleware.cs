@@ -29,7 +29,7 @@ public class ApiKeyMiddleware(RequestDelegate next, IConfiguration configuration
         if (!expectedApiKey.Equals(apiKey))
         {
             context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-            await context.Response.WriteAsync("Unathorized");
+            await context.Response.WriteAsync("Wrong API key");
             return;
         }
 

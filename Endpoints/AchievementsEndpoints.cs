@@ -26,26 +26,29 @@ public static class AchievementsEndpoints
 
         group.MapGet("/id/{id}", async (int id, AppDbContext db) =>
         {
-            var achievement = await db.Achievements
-                .Where(a => a.Id == id)
-                .FirstOrDefaultAsync();
+            var achievement = await db.Achievements.FirstOrDefaultAsync(a => a.Id == id);
 
-            if (achievement == null) return Results.NotFound("An achievement with this id does not exist");
-
-            var achievementResult = new GetAchievementDto(achievement.Id, achievement.Name, achievement.DisplayName, achievement.Points);
+            if (achievement == null) return Results.NotFound();
             return Results.Ok(achievement);
         });
 
         group.MapGet("/{name}", async (string name, AppDbContext db) =>
         {
-            var achievement = await db.Achievements
+            var achievement = await db.Achievements.FirstOrDefaultAsync(a => a.Name == name);
+
+            if (achievement == null) return Results.NotFound();
+            return Results.Ok(achievement);
+        });
+
+        group.MapGet("/{name}/id", async (string name, AppDbContext db) =>
+        {
+            var achievementId = await db.Achievements
                 .Where(a => a.Name == name)
+                .Select(a => a.Id)
                 .FirstOrDefaultAsync();
 
-            if (achievement == null) return Results.NotFound("An achievement with this name does not exist");
-
-            var achievementResult = new GetAchievementDto(achievement.Id, achievement.Name, achievement.DisplayName, achievement.Points);
-            return Results.Ok(achievement);
+            if (achievementId == default) return Results.NotFound();
+            return Results.Ok(achievementId);
         });
 
         app.MapPost("/api/achievements", async (AppDbContext db, AchievementDto dto) =>
@@ -58,12 +61,8 @@ public static class AchievementsEndpoints
             bool nameExists = await db.Achievements.AnyAsync(p => p.Name.Equals(dto.Name.ToLower()));
             if (nameExists) return Results.Conflict($"An achievement with the name '{dto.Name}' already exists");
 
-            bool isPointsInvalid = dto.Points < 0 || dto.Points > 1000000000;
-            if (isPointsInvalid)
-            {
-                Console.WriteLine("Invalid");
-                return Results.BadRequest("Invalid points");
-            }
+            bool isPointsInvalid = dto.Points < 0 || dto.Points > 999999999;
+            if (isPointsInvalid) return Results.BadRequest("Invalid points");
 
             var achievement = new Achievement
             {
@@ -75,7 +74,31 @@ public static class AchievementsEndpoints
             db.Achievements.Add(achievement);
             await db.SaveChangesAsync();
             
-            return Results.Ok(new { message = "Successfully", achievement });
+            return Results.Ok(achievement);
+        });
+
+        app.MapDelete("/api/achievements/id/{id:int}", async (AppDbContext db, int id) =>
+        {
+            var achievement = await db.Achievements.FirstOrDefaultAsync(a => a.Id == id);
+            
+            if (achievement == null) return Results.NotFound();
+
+            db.Achievements.Remove(achievement);
+            await db.SaveChangesAsync();
+            
+            return Results.NoContent();
+        });
+
+        app.MapDelete("/api/achievements/{name}", async (AppDbContext db, string name) =>
+        {
+            var achievement = await db.Achievements.FirstOrDefaultAsync(a => a.Name == name);
+            
+            if (achievement == null) return Results.NotFound();
+
+            db.Achievements.Remove(achievement);
+            await db.SaveChangesAsync();
+            
+            return Results.NoContent();
         });
     }
 }

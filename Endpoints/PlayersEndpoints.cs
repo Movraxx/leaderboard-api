@@ -6,7 +6,7 @@ namespace PlayerLeaderboardApi.Endpoints;
 
 public record PlayerDto(string Name);
 public record PlayersTopDto(string DisplayName, int Score);
-public record GetPlayerDto(int Id, string Name, string DisplayName, List<int> AchievementIds);
+public record GetPlayerDto(int Id, string Name, string DisplayName, List<int> AchievementIds, int Score);
 
 public static class PlayersEndpoints
 {
@@ -38,9 +38,9 @@ public static class PlayersEndpoints
                 .Include(p => p.Achievements)
                 .FirstOrDefaultAsync();
             
-            if (player == null) return Results.NotFound("A player with this id does not exist");
+            if (player == null) return Results.NotFound();
 
-            var playerResult = new GetPlayerDto(player.Id, player.Name, player.DisplayName, player.GetAchievementIds());
+            var playerResult = new GetPlayerDto(player.Id, player.Name, player.DisplayName, player.GetAchievementIds(), player.Score);
             return Results.Ok(playerResult);
         });
 
@@ -51,10 +51,21 @@ public static class PlayersEndpoints
                 .Include(p => p.Achievements)
                 .FirstOrDefaultAsync();
 
-            if (player == null) return Results.NotFound("A player with this name does not exist");
+            if (player == null) return Results.NotFound();
 
-            var playerResult = new GetPlayerDto(player.Id, player.Name, player.DisplayName, player.GetAchievementIds());
+            var playerResult = new GetPlayerDto(player.Id, player.Name, player.DisplayName, player.GetAchievementIds(), player.Score);
             return Results.Ok(playerResult);
+        });
+
+        group.MapGet("/{name}/id", async (string name, AppDbContext db) =>
+        {
+            var playerId = await db.Players
+                .Where(p => p.Name == name)
+                .Select(p => p.Id)
+                .FirstOrDefaultAsync();
+
+            if (playerId == default) return Results.NotFound();
+            return Results.Ok(playerId);
         });
 
         app.MapPost("/api/players", async (AppDbContext db, PlayerDto dto) =>
@@ -76,7 +87,31 @@ public static class PlayersEndpoints
             db.Players.Add(player);
             await db.SaveChangesAsync();
             
-            return Results.Ok("Success");
+            return Results.Ok(player);
+        });
+
+        app.MapDelete("/api/players/id/{id:int}", async (AppDbContext db, int id) =>
+        {
+            var player = await db.Players.FirstOrDefaultAsync(p => p.Id == id);
+            
+            if (player == null) return Results.NotFound();
+
+            db.Players.Remove(player);
+            await db.SaveChangesAsync();
+            
+            return Results.NoContent();
+        });
+
+        app.MapDelete("/api/players/{name}", async (AppDbContext db, string name) =>
+        {
+            var player = await db.Players.FirstOrDefaultAsync(p => p.Name == name);
+            
+            if (player == null) return Results.NotFound();
+
+            db.Players.Remove(player);
+            await db.SaveChangesAsync();
+            
+            return Results.NoContent();
         });
     }
 }
